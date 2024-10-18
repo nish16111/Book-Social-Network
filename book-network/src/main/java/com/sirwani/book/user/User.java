@@ -1,13 +1,13 @@
 package com.sirwani.book.user;
 
+import com.sirwani.book.role.Role;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.security.Principal;
@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -25,7 +26,6 @@ import java.util.List;
 @Table(name = "_user")
 @EntityListeners(AuditingEntityListener.class)
 public class User implements UserDetails, Principal {
-
     @Id
     @GeneratedValue
     private Integer id;
@@ -37,6 +37,9 @@ public class User implements UserDetails, Principal {
     private String password;
     private boolean accountLocked;
     private boolean enabled;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    private List<Role> roles;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -53,7 +56,14 @@ public class User implements UserDetails, Principal {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return this.roles // this keyword is used to refers to the instance(field) variables
+                //stream is used to iterate over, apply transformations on collections (List, Set...)
+                .stream()
+                //.map() is used to apply a function to each element in the stream and return
+                // a new stream of the transformed elements.
+                .map(r -> new SimpleGrantedAuthority(r.getName()))
+                //collects a stream and binds them into a specific group(collections), List in this case
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -86,7 +96,7 @@ public class User implements UserDetails, Principal {
         return enabled;
     }
 
-    private String fullName()
+    public String fullName()
     {
         return firstname + " " + lastname;
     }
