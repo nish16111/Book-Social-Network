@@ -14,12 +14,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +37,8 @@ public class AuthenticationService {
 
     @Value("${application.mailing.frontend.activation-url}")
     private String confirmationUrl;
+
+
 
 
     public void register(RegistrationRequest request) throws MessagingException {
@@ -109,10 +113,23 @@ public class AuthenticationService {
 
         return AuthenticationResponse.builder().token(jwtToken).build();
     }
-}
 
-/*
-1. assign roles to the user
-2. Create a user object and save it to the database
-3. Send a validation email
-*/
+
+    public void activateAccount(String token) throws MessagingException {
+        Token savedToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Token is not valid"));
+
+        if(LocalDateTime.now().isAfter(savedToken.getExpiresAt()))
+        {
+            sendValidationEmail(savedToken.getUser());
+            throw new RuntimeException("Token has expired, A new Token has been sent to the registered email id");
+        }
+
+        var user = userRepository.findById(savedToken.getUser().getId())
+                        .orElseThrow(() -> new RuntimeException("User Not found"));
+        user.setEnabled(true);
+        userRepository.save(user);
+        savedToken.setValidatedAt(LocalDateTime.now());
+        tokenRepository.save(savedToken);
+    }
+}
