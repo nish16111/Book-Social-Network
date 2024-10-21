@@ -1,5 +1,7 @@
 package com.sirwani.book.user;
 
+import com.sirwani.book.book.Book;
+import com.sirwani.book.history.BookTransactionHistory;
 import com.sirwani.book.role.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -40,6 +42,15 @@ public class User implements UserDetails, Principal {
 
     @ManyToMany(fetch = FetchType.EAGER)
     private List<Role> roles;
+
+    /*
+    One (up sign) User to many books (down sign)
+     */
+    @OneToMany(mappedBy = "owner")
+    private List<Book> books;
+
+    @OneToMany(mappedBy = "user")
+    private List<BookTransactionHistory> histories;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -96,8 +107,7 @@ public class User implements UserDetails, Principal {
         return enabled;
     }
 
-    public String fullName()
-    {
+    public String fullName() {
         return firstname + " " + lastname;
     }
 }
