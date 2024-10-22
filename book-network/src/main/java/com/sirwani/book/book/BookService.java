@@ -1,13 +1,17 @@
 package com.sirwani.book.book;
 
+import com.sirwani.book.common.PageResponse;
 import com.sirwani.book.user.User;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,4 +35,21 @@ public class BookService {
     }
 
 
+    public PageResponse<BookResponse> findAllBooks(int pageNumber, int size, Authentication connectedUser) {
+        User user = ((User) connectedUser.getPrincipal());
+        Pageable pageable = PageRequest.of(pageNumber, size, Sort.by("createdDate").descending());
+        Page<Book> books = bookRepository.findAllDisplayableBooks(pageable, user.getId());
+        List<BookResponse> bookResponse = books.stream()
+                .map(bookMapper::toBookResponse)
+                .toList();
+        return new PageResponse<>(
+                bookResponse,
+                books.getNumber(),
+                books.getSize(),
+                books.getTotalElements(),
+                books.getTotalPages(),
+                books.isFirst(),
+                books.isLast()
+        );
+    }
 }
