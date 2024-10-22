@@ -47,6 +47,20 @@ public class Book extends BaseEntity {
 
     @OneToMany(mappedBy = "book")
     private List<BookTransactionHistory> histories;
+
+    @Transient
+    public double getRatings() {
+        if(this.feedBacks == null || this.feedBacks.isEmpty()) {
+            return 0.0;
+        }
+
+        var ratings = this.feedBacks.stream()
+                .mapToDouble(FeedBack::getNote)
+                .average()
+                .orElse(0.0);
+
+        return ratings;
+    }
 }
 
     /*
